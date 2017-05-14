@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.springframework.org/schema/jdbc">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Title</title>
+    <link href="../../vender/jquery-highlighttextarea/jquery.highlighttextarea.css" rel="stylesheet" />
+    <link href="../../vender/bootstrap-3.3.7-dist/css/bootstrap.min.css" rel="stylesheet" charset="utf-8" />
+    <link href="../../css/common.css" rel="stylesheet" charset="utf-8" />
+</head>
+<style>
+    .param_black_div{
+        width:2%;
+        height: 2px;
+        float: left;
+    }
+    .right-button{
+        width: 8%;
+        float: left;
+    }
+    a.btn-xs{
+        margin-top:5px;
+        border-radius: 50px;
+    }
+
+
+    pre {padding: 5px; margin: 5px; }
+    .string { color: green; }
+    .number { color: darkorange; }
+    .boolean { color: blue; }
+    .null { color: magenta; }
+    .key { color: red; }
+
+</style>
+<body>
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <!-- We use the fluid option here to avoid overriding the fixed width of a normal container within the narrow content columns. -->
+    <div class="container-fluid">
+        <div class="container">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#"><span class="glyphicon glyphicon-home"></span> Home</a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-6">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="/add/sql">mix-query</a></li>
+                </ul>
+            </div><!-- /.navbar-collapse -->
+        </div>
+    </div>
+</nav>
+<div class="clearfix nav-height"></div>
+<div class="container-fluid container-title">
+    <div class="container container-title-content">
+        <h1>Mix-query</h1>
+        <p>Mix-query 混合查询平台,可以关联查询不同的数据源，比如 hive mysql sqlServer 的数据，并支持 insert into、insert overwrite 操作。</p>
+    </div>
+</div>
+<div class="container">
+    <div class="row">
+        <div class="panel panel-default">
+            <div class="panel-heading">
+                <h3 class="panel-title">add sql</h3>
+            </div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label>schemas</label>
+                    <div class="form-group schema-form">
+                        <div id="add-schema-div">
+                            <div class="form-group jdbc">
+                                <div class="form-group" style="width: 39%; float: left">
+                                    <input type="text" name="host" class="form-control" placeholder="host" />
+                                </div>
+                                <div class="param_black_div"></div>
+                                <div class="form-group" style="width: 15%; float: left">
+                                    <input type="text" name="user" class="form-control" placeholder="username" />
+                                </div>
+                                <div class="param_black_div"></div>
+                                <div class="form-group" style="width: 15%; float: left">
+                                    <input type="password" name="password" class="form-control" placeholder="password" />
+                                </div>
+                                <div class="param_black_div"></div>
+                                <div class="form-group" style="width: 15%; float: left">
+                                    <input type="text" name="schema" class="form-control" placeholder="schema" />
+                                </div>
+                                <div class="param_black_div"></div>
+                                <div class="form-group right-button">
+                                    <a class="btn btn-default btn-xs" href="#">test</a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="clearfix"></div>
+                        <div class="form-group">
+                            <button type="button" class="btn btn-default btn-xs" id="add-schema"> + add schema </button>
+                        </div><!-- #add_param -->
+                        <div class="clearfix"></div>
+                        <div class="form-group">
+                            <label>sql</label>
+                            <textarea id="sql-textarea" maxlength="1000" class="form-control input-width" style="background: none;font-size:18px;height:100px">select * from table user limit 1</textarea>
+                            <span>您已输入</span><span id="sql_input_num">0</span>/1000字
+                        </div><!-- .form-group -->
+                    </div>
+                </div><!-- .form-group -->
+                <div class="clearfix"></div>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-default sql-button" id="run-sql"> run </button>
+                </div>
+            </div>
+        </div><!-- .panel -->
+    </div><!-- .row -->
+    <div class="row">
+        <blockquote>
+            <p id="true-sql"></p>
+        </blockquote>
+        <table class="table table-bordered" id="sql-result">
+            <thead></thead>
+            <tbody></tbody>
+        </table>
+    </div><!-- .row -->
+</div><!-- .container -->
+
+
+<script src="../../vender/jQuery/jquery-2.2.3.min.js"></script>
+<script src="../../vender/layer/layer.js"></script>
+<script src="../../vender/bootstrap-3.3.7-dist/js/bootstrap.min.js"></script>
+<script src="../../vender/jquery-highlighttextarea/jquery.highlighttextarea.js"></script>
+<script src="../../js/common.js"></script>
+<script th:inline="JavaScript">
+    /*<![CDATA[*/
+
+    $(function () {
+        form_init();
+        sql_init();
+        $(".highlightTextarea").css("width", "90%");
+        $(document).on('input propertychange focus', '#sql-textarea', function() {
+            //$(this).highlightTextarea('setWords', ['select','table']);
+            sql_init();
+        });
+
+        // 添加 schema
+        $("#add-schema").click(function () {
+            var tpl = get_schema_tpl();
+            $("#add-schema-div").append(tpl);
+            sql_init();
+            $(".highlightTextarea").css("width", "100%");
+            console.log("hello wolrd!");
+        });
+
+        // 删除参数
+        $(document).on('click', '.param-rm', function(){
+            $(this).parents('.param-item').remove();
+        });
+
+        //运行sql
+        $("#run-sql").click(function () {
+            var req_data = get_request_data();
+            console.log( req_data );
+            layer.load( 0, {zIndex: 100000} );
+            $.ajax({
+                url:'/query',
+                type:'POST',
+                contentType: 'application/json',
+                async:true,
+                data:req_data,
+                dataType:'json',
+                success:function(data){
+                    console.log( data );
+                    $("#sql-result > thead").empty();
+                    $("#sql-result > tbody").empty();
+                    // 判断 sql
+                    // 判断 result 的合法性
+                    if( typeof data["result"] == "undefine" || data["result"] == null || data["result"].length <= 0){
+                        return;
+                    }
+                    var result = data["result"];
+                    var size = result.length;
+                    for(var i=0; i< size; i++){
+                        var item = result[i];
+                        var head = "<tr>";
+                        var row = "<tr>";
+                        for (var key in item){
+                            head += "<th>" + key + "</th>";
+                            row += "<td>" + item[key] + "</td>";
+                        }
+                        head += "</tr>";
+                        row += "</tr>";
+                        if( i == 0 ){
+                            $("#sql-result > thead").append( head );
+                        }
+                        $("#sql-result > tbody").append( row );
+                    }
+                    layer.closeAll()
+                },
+                error:function (data) {
+                    console.log( data );
+                    layer.closeAll()
+                }
+            });
+        });
+    });
+
+    function sql_init() {
+        $("#sql-textarea").highlightTextarea({
+            words: [{
+                color: '#ADF0FF',
+                words: 'select'
+            }, {
+                color: '#ADF0FF',
+                words: 'where'
+            }, {
+                color: '#FFFF00',
+                words: '{'
+            }, {
+                color: '#FFFF00',
+                words: '$'
+            }, {
+                color: '#FFFF00',
+                words: '}'
+            }, {
+                words: 'limit'
+            }]
+        });
+
+        var content = $("#sql-textarea").val();
+        var count = content.length;
+        $("#sql_input_num").text(count);
+    }
+
+    function get_request_data() {
+        var data = {};
+        var param_list = [];
+        $(".jdbc").each(function () {
+            var param = {};
+            param.host = $(this).find("input[name='host']").val();
+            param.user = $(this).find("input[name='user']").val();
+            param.password = $(this).find("input[name='password']").val();
+            param.schema = $(this).find("input[name='schema']").val();
+            param_list.push(param);
+        });
+        data.jdbcs = param_list;
+        data.sql = $("#sql-textarea").val();
+        data = JSON.stringify(data);
+        set_cookie("jdbc_datas", data);
+        return data;
+    }
+
+    function form_init() {
+        var data = get_cookie("jdbc_datas");
+        var form_data = JSON.parse(data);
+        if( typeof form_data == "undefine" || form_data == null ){
+            return
+        }
+        $("#sql-textarea").val( form_data.sql );
+        if( typeof form_data.jdbcs == "undefined" ){
+            return;
+        }
+        var params = form_data.jdbcs;
+        var param_size = params.length;
+        if(param_size >=1){
+            $("input[name='host']").val(params[0]['host']);
+            $("input[name='user']").val(params[0]['user']);
+            $("input[name='password']").val(params[0]['password']);
+            $("input[name='schema']").val(params[0]['schema']);
+        }
+        for(var i = 1; i < param_size; i++){
+            $("#add-schema-div").append( get_schema_tpl(params[i]['host'],params[i]['user'],params[i]['password'],params[i]['schema']) );
+        }
+
+    }
+
+    function get_schema_tpl(host,user,password,schema) {
+        if(!host){
+            host='';
+        }
+        if(!password){
+            password='';
+        }
+        if(!user){
+            user='';
+        }
+        if(!schema){
+            schema='';
+        }
+        var schema_tpl='<div class="form-group param-item schema-form">' +
+                '<div class="form-group jdbc">' +
+                '<div class="form-group" style="width: 39%; float: left">' +
+                '<input type="text" name="host" class="form-control" placeholder="host" value="'+ host +'"/>' +
+                '</div>' +
+                '<div class="param_black_div"></div>' +
+                '<div class="form-group" style="width: 15%; float: left">' +
+                '<input type="text" name="user" class="form-control" placeholder="username" value="' +user+ '" />' +
+                '</div>' +
+                '<div class="param_black_div"></div>' +
+                '<div class="form-group" style="width: 15%; float: left">' +
+                '<input type="password" name="password" class="form-control" placeholder="password" value="' +password+ '"/>' +
+                '</div>' +
+                '<div class="param_black_div"></div>' +
+                '<div class="form-group" style="width: 15%; float: left">' +
+                '<input type="text" name="schema" class="form-control" placeholder="schema" value="'+ schema +'" />' +
+                '</div>' +
+                '<div class="param_black_div"></div>' +
+                '<div class="form-group right-button">' +
+                '<a class="btn btn-default btn-xs glyphicon glyphicon-remove param-rm" href="#"></a>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+
+        return schema_tpl;
+    }
+    /*]]>*/
+</script>
+</body>
+</html>
