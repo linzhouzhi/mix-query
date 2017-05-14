@@ -5,5 +5,7 @@ package core
   */
 object Application extends App{
   val mixQuery = new MixQuery
-  mixQuery.startJob
+  val queryParam: QueryParam = new QueryParam
+  val df = mixQuery.startJob(queryParam)
+  df.show()
 }

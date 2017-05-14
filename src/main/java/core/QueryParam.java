@@ -1,15 +1,18 @@
 package core;
 
+import net.sf.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by lzz on 17/4/30.
  */
 public class QueryParam {
     // 转换前的参数
-    private List<HashMap<String, HashMap<String, String>>> jdbcList;
+    private List<Map<String, HashMap<String, String>>> jdbcList;
     private String sql;
 
     // 转化后的参数
@@ -22,8 +25,30 @@ public class QueryParam {
     // insert  操作
     private HashMap<String, String> insertHm;
 
+    public QueryParam(JSONObject requestBody) {
+        List<Map<String, HashMap<String, String>>> jdbcList = new ArrayList<>();
+        List<Map<String, String>> jdbcs = requestBody.getJSONArray("jdbcs");
+        for( int i = 0; i < jdbcs.size(); i++ ){
+            Map<String, String> hm = new HashMap();
+            String host = "jdbc:"+jdbcs.get(i).get("host");
+            String user = jdbcs.get(i).get("user");
+            String password = jdbcs.get(i).get("password");
+            String schema = jdbcs.get(i).get("schema");
+            hm.put("host", host);
+            hm.put("user", user);
+            hm.put("password", password);
+            Map<String, HashMap<String, String>> itemHm = new HashMap();
+            itemHm.put(schema, (HashMap<String, String>) hm);
+            jdbcList.add(itemHm);
+        }
+        this.jdbcList = jdbcList;
+        this.sql = requestBody.getString("sql");
+        // 参数格式转化
+        adaptParam();
+    }
+
     public QueryParam(){
-        List<HashMap<String, HashMap<String, String>>> jdbcList = new ArrayList<>();
+        List<Map<String, HashMap<String, String>>> jdbcList = new ArrayList<>();
         HashMap hm = new HashMap();
         hm.put("host", "jdbc:"+"mysql://192.168.1.101:3306/test");
         hm.put("user", "root");
@@ -94,11 +119,11 @@ public class QueryParam {
         System.out.println( this );
     }
 
-    public List<HashMap<String, HashMap<String, String>>> getJdbcList() {
+    public List<Map<String, HashMap<String, String>>> getJdbcList() {
         return jdbcList;
     }
 
-    public void setJdbcList(List<HashMap<String, HashMap<String, String>>> jdbcList) {
+    public void setJdbcList(List<Map<String, HashMap<String, String>>> jdbcList) {
         this.jdbcList = jdbcList;
     }
 

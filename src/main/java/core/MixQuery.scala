@@ -10,13 +10,15 @@ import org.apache.spark.{SparkConf, SparkContext}
   * Created by lzz on 17/4/30.
   */
 class MixQuery {
-  val queryParam = new QueryParam()
+  var queryParam = null: QueryParam
   val sparkConf = new SparkConf().setMaster("local")
     .setAppName("clean app")
+    .set("spark.driver.allowMultipleContexts", "true")
   val sc = new SparkContext(sparkConf)
   val sqlContext = new SQLContext(sc)
 
-  def startJob: DataFrame ={
+  def startJob(queryParam: QueryParam): DataFrame ={
+    this.queryParam = queryParam
     val sqlList = queryParam.getSqlList
     val size = sqlList.size() - 1
     var rdd:DataFrame = null
