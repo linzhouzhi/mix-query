@@ -17,4 +17,10 @@ public class QueryController {
         JSONObject jsonObject = queryLogic.process( requestBody );
         return jsonObject;
     }
+
+    @RequestMapping(value="/test", method = RequestMethod.GET)
+    public JSONObject test() {
+        JSONObject jsonObject = new JSONObject();
+        return jsonObject;
+    }
 }
